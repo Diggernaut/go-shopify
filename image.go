@@ -36,6 +36,7 @@ type Image struct {
 	Attachment string     `json:"attachment,omitempty"`
 	Filename   string     `json:"filename,omitempty"`
 	VariantIds []int64    `json:"variant_ids,omitempty"`
+	Alt        string     `json:"alt"`
 }
 
 // ImageResource represents the result form the products/X/images/Y.json endpoint

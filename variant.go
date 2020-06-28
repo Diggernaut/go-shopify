@@ -55,6 +55,7 @@ type Variant struct {
 	OldInventoryQuantity int              `json:"old_inventory_quantity,omitempty"`
 	RequireShipping      bool             `json:"requires_shipping,omitempty"`
 	AdminGraphqlAPIID    string           `json:"admin_graphql_api_id,omitempty"`
+	Image                []Image          `json:"image"`
 }
 
 // VariantResource represents the result from the variants/X.json endpoint

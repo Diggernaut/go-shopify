@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"reflect"
 	"sort"
@@ -38,7 +40,6 @@ type Client struct {
 
 	// App settings
 	app App
-
 	// Base URL for API requests.
 	// This is set on a per-store basis which means that each store must have
 	// its own client.
@@ -185,7 +186,6 @@ func (a App) NewClient(shopName, token string) *Client {
 // e.g. "theshop.myshopify.com", or simply "theshop"
 func NewClient(app App, shopName, token string) *Client {
 	httpClient := http.DefaultClient
-
 	baseURL, _ := url.Parse(ShopBaseUrl(shopName))
 
 	c := &Client{Client: httpClient, app: app, baseURL: baseURL, token: token}
@@ -240,12 +240,14 @@ func (c *Client) Do(req *http.Request, v interface{}) error {
 		if err != nil {
 			return err
 		}
+		//log.Printf("%v", v)
 	}
 
 	return nil
 }
 
 func wrapSpecificError(r *http.Response, err ResponseError) error {
+
 	if err.Status == 429 {
 		f, _ := strconv.ParseFloat(r.Header.Get("retry-after"), 64)
 		return RateLimitError{
@@ -260,7 +262,14 @@ func wrapSpecificError(r *http.Response, err ResponseError) error {
 }
 
 func CheckResponseError(r *http.Response) error {
+	//log.Println(r.StatusCode)
+
 	if r.StatusCode >= 200 && r.StatusCode < 300 {
+		requestDump, err := httputil.DumpResponse(r, true)
+		if err != nil {
+			fmt.Println(err)
+		}
+		log.Println(string(requestDump))
 		return nil
 	}
 
@@ -272,6 +281,11 @@ func CheckResponseError(r *http.Response) error {
 
 	bodyBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
+		requestDump, err := httputil.DumpResponse(r, true)
+		if err != nil {
+			fmt.Println(err)
+		}
+		log.Println(string(requestDump))
 		return err
 	}
 
@@ -280,6 +294,12 @@ func CheckResponseError(r *http.Response) error {
 	if len(bodyBytes) > 0 {
 		err := json.Unmarshal(bodyBytes, &shopifyError)
 		if err != nil {
+			requestDump, err := httputil.DumpResponse(r, true)
+			if err != nil {
+				fmt.Println(err)
+			}
+			log.Println(string(requestDump))
+			//log.Printf("err: %v", shopifyError)
 			return ResponseDecodingError{
 				Body:    bodyBytes,
 				Message: err.Error(),
@@ -342,7 +362,7 @@ func CheckResponseError(r *http.Response) error {
 			}
 		}
 	}
-
+	//log.Println("err:", string(bodyBytes))
 	return wrapSpecificError(r, responseError)
 }
 
